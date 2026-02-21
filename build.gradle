@@ -1,17 +1,66 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath "com.android.tools.build:gradle:7.0.3"
+plugins {
+    alias(libs.plugins.agp.app) apply false
+}
 
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+def execute(String cmd, File currentWorkingDir = file("./"), String fallback = "") {
+    try {
+        def byteOut = new ByteArrayOutputStream()
+        project.exec {
+            workingDir = currentWorkingDir
+            commandLine = cmd.split("\s")
+            standardOutput = byteOut
+            errorOutput = new ByteArrayOutputStream()
+            ignoreExitValue = true
+        }
+        def result = byteOut.toString().trim()
+        return result.isEmpty() ? fallback : result
+    } catch (Exception ignored) {
+        return fallback
     }
 }
 
-task clean(type: Delete) {
+def gitCommitCount = execute("git rev-list HEAD --count", file("./"), "1").toInteger()
+def gitCommitHash = execute("git rev-parse --verify --short HEAD", file("./"), "unknown")
+
+ext {
+    moduleId = "zygisk-module-c"
+    moduleName = "Zygisk Module C Template"
+    verName = "1.0.0"
+    verCode = gitCommitCount
+    commitHash = gitCommitHash
+    abiList = ["arm64-v8a", "armeabi-v7a", "x86", "x86_64"]
+
+    androidMinSdkVersion = 26
+    androidTargetSdkVersion = 36
+    androidCompileSdkVersion = 36
+    androidBuildToolsVersion = "36.1.0"
+    androidCompileNdkVersion = "29.0.14206865"
+    androidSourceCompatibility = JavaVersion.VERSION_17
+    androidTargetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.register("clean", Delete) {
     delete rootProject.buildDir
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin("com.android.application")) {
+            android {
+                namespace = "io.github.hansobored.zygisk.module.c"
+                compileSdkVersion rootProject.androidCompileSdkVersion
+                ndkVersion rootProject.androidCompileNdkVersion
+                buildToolsVersion rootProject.androidBuildToolsVersion
+
+                defaultConfig {
+                    minSdkVersion rootProject.androidMinSdkVersion
+                }
+
+                compileOptions {
+                    sourceCompatibility rootProject.androidSourceCompatibility
+                    targetCompatibility rootProject.androidTargetCompatibility
+                }
+            }
+        }
+    }
 }

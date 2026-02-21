@@ -1,0 +1,7 @@
+id=${moduleId}
+name=${moduleName}
+version=${versionName}
+versionCode=${versionCode}
+author=HanSoBored
+description=Zygisk Module sample
+#updateJson=
